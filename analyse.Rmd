@@ -43,7 +43,10 @@ df_enq = read.table("data/questionnaire_bioinfo_fr_2018.tsv",
                     check.names = FALSE, 
                     col.names = cn_enq)
 
-
+# libraries
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
 ```
 
 ```{r, out.height = "150px", fig.align='center', echo=FALSE}
@@ -55,8 +58,23 @@ knitr::include_graphics("img/logo_bioinfofr.png")
 
 
 ## Résumé des données
-```{r summary}
+* Nombre de répondants : `r nrow(df_enq)`
+```{r summary, echo=FALSE}
+gender_bp = ggplot(df_enq, aes(x = gender)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  ylab("Percentage") +
+  ylim(0,0.8)
+age_bp = ggplot(df_enq, aes(x = age)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  ylab("Percentage") +
+  ylim(0,0.8)
+major_field_bp = ggplot(df_enq, aes(x = major_field)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  ylab("Percentage") +
+  ylim(0,0.8) +
+  coord_flip()
 
+grid.arrange(gender_bp, age_bp, major_field_bp, nrow = 2)
 ```
 
 
