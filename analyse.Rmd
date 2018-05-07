@@ -1,0 +1,63 @@
+---
+title: "Analyse de l'enquête Bioinfo-fr.net"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Header redifinition
+cn_enq = c(
+  "age",
+  "gender",
+  "diplome",
+  "major_field",
+  "year_exp",
+  "year_foreign",
+  "current_loc",
+  "public_private",
+  "contract",
+  "nb_bio_with",
+  "nb_bioinfo_with",
+  "nb_other_with",
+  "position_title",
+  "salary",
+  "OS",
+  "prog_language",
+  "lang_dev_web",
+  "lang_bdd",
+  "lang_scripting",
+  "lang_stats_anal",
+  "lang_sys_admin",
+  "lang_app_dev",
+  "lang_other"
+)
+
+# Loading data
+df_enq = read.table("data/questionnaire_bioinfo_fr_2018.tsv", 
+                    skip = 2, 
+                    header = TRUE, 
+                    encoding = "UTF-8", 
+                    check.names = FALSE, 
+                    col.names = cn_enq)
+
+
+```
+
+```{r, out.height = "150px", fig.align='center', echo=FALSE}
+knitr::include_graphics("img/logo_bioinfofr.png")
+```
+
+## Contexte
+
+
+
+## Résumé des données
+```{r summary}
+
+```
+
+
+## Stats exploratoires
