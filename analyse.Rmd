@@ -5,6 +5,12 @@ output:
     theme: cayman
 ---
 
+<!-- <style type="text/css"> -->
+<!-- .inner { -->
+<!--   width: 90%; -->
+<!-- } -->
+<!-- </style> -->
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -59,23 +65,78 @@ knitr::include_graphics("img/logo_bioinfofr.png")
 
 ## Résumé des données
 * Nombre de répondants : `r nrow(df_enq)`
-```{r summary, echo=FALSE}
+```{r summary, echo=FALSE, fig.height = 12, fig.width = 12}
 gender_bp = ggplot(df_enq, aes(x = gender)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
-  ylab("Percentage") +
-  ylim(0,0.8)
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9)
 age_bp = ggplot(df_enq, aes(x = age)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
-  ylab("Percentage") +
-  ylim(0,0.8)
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9)
 major_field_bp = ggplot(df_enq, aes(x = major_field)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
-  ylab("Percentage") +
-  ylim(0,0.8) +
-  coord_flip()
+  xlab("") +
+  ylab("Pourcentage") +
+  scale_x_discrete(labels = c("Equilibré", "+ Info", "+ Bio")) +
+  ylim(0,0.9) 
+current_loc = ggplot(df_enq, aes(x = current_loc)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  scale_x_discrete(labels = c("Étranger (Eur.)", "Étranger (hors Eur.)", "France")) +
+  ylim(0,0.9)
+public_private = ggplot(df_enq, aes(x = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9)
+contract = ggplot(df_enq, aes(x = contract)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9)
+salary = ggplot(df_enq, aes(x = salary)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9) +
+  theme(axis.text.x = element_text(angle = -90)) # TODO : remove when below code will work
+# Not yet functional
+# nLab = c("[15;20[", "[20;25[", "[25;30[", "[30;35[", "[35;40[",
+#          "[40;45[", "[45;50[", "[50;55[", "[55;60[", "[60;65[",
+#          "[65;70[", "[70;75[", "[80;++[", "[00;15[")
+# assign_level = function(vector, new_levels, missing_level) {
+#   levels(vector) <- c(new_levels, missing_level)
+#   return(vector)
+# }
+# salary = ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")), 
+#                 aes(x = attributes(reorder(c(nLab, "[75;80["), c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,14)))$scores)) + 
+#   geom_bar(aes(y = (..count..)/sum(..count..))) +
+#   theme_minimal() +
+#   xlab("") +
+#   ylab("Pourcentage") +
+#   ylim(0,0.9) +
+#   theme(axis.text.x = element_text(angle = -90))
+OS = ggplot(df_enq, aes(x = OS)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9)
 
-grid.arrange(gender_bp, age_bp, major_field_bp, nrow = 2)
+grid.arrange(gender_bp, age_bp, 
+             major_field_bp, current_loc,
+             public_private, contract,
+             salary, OS,
+             nrow = 4)
 ```
 
 
 ## Stats exploratoires
+```{r statsExplo}
+
+```
+
+ mutate(cyl = factor(cyl, levels = c(4, 6, 8)))
