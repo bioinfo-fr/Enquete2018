@@ -138,7 +138,8 @@ corpus_init <- df_enq$position_title
 
 # Syntax formating
 corpus_formated <- tolower(corpus_init)
-corpus_formated <- # Try with a basic grep removing punctiation
+corpus_formated <- 
+  # Try with a basic grep removing punctiation
 # corpus_formated <- lapply(corpus_formated, tm_map(removePunctuation))
 
 ```
