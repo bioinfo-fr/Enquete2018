@@ -129,18 +129,23 @@ grid.arrange(gender_bp, age_bp,
 ```
 * Nuage de mot des intitulés de poste
 ```{r word_cloud}
-library("tm")
-library("SnowballC")
-library("wordcloud")
-library("RColorBrewer")
-
 corpus_init <- df_enq$position_title
 
 # Syntax formating
 corpus_formated <- tolower(corpus_init)
-corpus_formated <- 
-  # Try with a basic grep removing punctiation
-# corpus_formated <- lapply(corpus_formated, tm_map(removePunctuation))
+punctuation_words <- grep("[[:punct:]]", corpus_formated, value = TRUE) 
+accent_words <- grep("[À-ÿ]", corpus_formated, value = TRUE, perl = TRUE)
+lv_dist <- adist(corpus_formated) # Using leventstein distance to explore word proximity
+ggplot(lv_dist %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% setNames(c("lv_dist", "freq")), 
+       aes(lv_dist, freq)) + geom_line() 
+word_low_lv = data.frame(word_1 = character(), word_2 = character(), lv_dist = numeric(), stringsAsFactors = FALSE)
+for (i in 1:nrow(lv_dist)) {
+  for (j in 1:ncol(lv_dist)) {
+    if (lv_dist[i,j] > 0 & lv_dist[i,j] < 5) {
+      word_low_lv[nrow(word_low_lv) + 1,] <- c(corpus_formated[i], corpus_formated[j], lv_dist[i,j])
+    }
+  }
+}
 
 ```
 
