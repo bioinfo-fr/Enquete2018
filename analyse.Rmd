@@ -131,13 +131,38 @@ grid.arrange(gender_bp, age_bp,
 ```{r word_cloud}
 corpus_init <- df_enq$position_title
 
-# Syntax formating
+# Syntax study
 corpus_formated <- tolower(corpus_init)
+
+# Looking into factors of difference within same words
 punctuation_words <- grep("[[:punct:]]", corpus_formated, value = TRUE) 
 accent_words <- grep("[À-ÿ]", corpus_formated, value = TRUE, perl = TRUE)
 lv_dist <- adist(corpus_formated) # Using leventstein distance to explore word proximity
-ggplot(lv_dist %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% setNames(c("lv_dist", "freq")), 
-       aes(lv_dist, freq)) + geom_line() 
+ggplot(lv_dist %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% 
+         setNames(c("lv_dist", "freq")), aes(lv_dist, freq)) + geom_line() 
+
+# Cleaning
+resume_df = as.data.frame(corpus_formated, stringsAsFactors = FALSE) %>% setNames("init_corpus") %>%
+  mutate(unpunctuated = removePunctuation(init_corpus)) %>%
+  mutate(unaccent = iconv(init_corpus, from="UTF-8", to="ASCII//TRANSLIT")) %>%
+  mutate(un_punc_accent = iconv(init_corpus, from="UTF-8", to="ASCII//TRANSLIT"))
+lv_dist_clean <- adist(resume_df$un_punc_accent) # Using leventstein distance to explore word proximity
+ggplot(lv_dist_clean %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% 
+         setNames(c("lv_dist_clean", "freq")), aes(lv_dist_clean, freq)) + geom_line() 
+lv_dist_clean[upper.tri(lv_dist_clean)] = 999
+close_words_ind <- which(lv_dist_clean < 6, arr.ind = TRUE)
+close_words <- data.frame(w1 = resume_df$un_punc_accent[close_words_ind[,1]], 
+                          w2 = resume_df$un_punc_accent[close_words_ind[,2]])
+
+######### TEST 
+
+######### 
+# tree = hclust(lv_dist)
+wss <- (nrow(lv_dist)-1)*sum(apply(lv_dist,2,var))
+for (i in 2:40) wss[i] <- sum(kmeans(lv_dist, centers=i)$withinss)
+plot(1:40, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares") 
+#########
+
 word_low_lv = data.frame(word_1 = character(), word_2 = character(), lv_dist = numeric(), stringsAsFactors = FALSE)
 for (i in 1:nrow(lv_dist)) {
   for (j in 1:ncol(lv_dist)) {
