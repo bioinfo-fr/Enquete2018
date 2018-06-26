@@ -42,17 +42,24 @@ cn_enq <- c(
 )
 
 # Loading data
-df_enq <- read.table("data/questionnaire_bioinfo_fr_2018.tsv", 
+df_enq_raw <- read.table("data/questionnaire_bioinfo_fr_2018.tsv", 
                     skip = 2, 
                     header = TRUE, 
                     encoding = "UTF-8", 
                     check.names = FALSE, 
                     col.names = cn_enq)
+df_enq_raw <- cbind(id = 1:nrow(df_enq_raw), df_enq_raw)
+
+# Creating output dir
+dir.create("plots", showWarnings = FALSE)
 
 # libraries
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
+library(tm)
+library(textcat)
+#library(DT)
 ```
 
 ```{r logo, out.height = "150px", fig.align='center', echo=FALSE}
@@ -60,6 +67,47 @@ knitr::include_graphics("img/logo_bioinfofr.png")
 ```
 
 ## Contexte
+Enquête bioinfo-fr 2018 afin de dresser un portrait des bioinformaticiens en France
+
+## Nettoyage des abérations
+Afin de filtrer les réponses hors de propos on va effectuer un premier tri sur les données par le biais des données numériques
+```{r numeric_filter}
+summary(df_enq_raw$year_exp)
+summary(df_enq_raw$year_foreign)
+summary(df_enq_raw$nb_bio_with)
+summary(df_enq_raw$nb_bioinfo_with)
+summary(df_enq_raw$nb_other_with)
+
+# Removing entry which have
+#   - more than 60 year exp or foreign (because of retirement max)
+#   - more than 2.5 z-score (according to ‘thumb-rule’ thresholds)
+
+df_enq = df_enq_raw %>%
+  filter(year_exp < 60) %>%
+  filter(year_foreign < 60) %>%
+  filter(year_exp + year_foreign < 60) %>%
+  filter(scale(nb_bio_with) < 3) %>%
+  filter(scale(nb_bioinfo_with) < 3) %>%
+  filter(scale(nb_other_with) < 3) %>%
+  filter(scale(nb_bio_with + nb_bioinfo_with + nb_bio_with) < 3) 
+
+```
+
+
+```{r charac_filter}
+# Looking for empty responses or with no empty token
+empty_token = c("", "null", "0")
+df_enq  = df_enq %>%
+  filter(pmatch(position_title, empty_token) %>% is.na)
+
+# Semantic filter
+
+## Looking for answer not in french 
+# not_french = df_enq %>% 
+#   filter(!(textcat(position_title) == "french"))
+
+
+```
 
 
 
@@ -71,34 +119,46 @@ gender_bp <- ggplot(df_enq, aes(x = gender)) + geom_bar(aes(y = (..count..)/sum(
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
-  ylim(0,0.9)
+  ylim(0,0.9) +
+  ggtitle("Genre")
 age_bp <- ggplot(df_enq, aes(x = age)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
-  ylim(0,0.9)
+  ylim(0,0.9) +
+  ggtitle("Age")
 major_field_bp <- ggplot(df_enq, aes(x = major_field)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   scale_x_discrete(labels = c("Equilibré", "+ Info", "+ Bio")) +
-  ylim(0,0.9) 
+  ylim(0,0.9) +
+  ggtitle("Dominance dans le travail")
 current_loc <- ggplot(df_enq, aes(x = current_loc)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   scale_x_discrete(labels = c("Étranger (Eur.)", "Étranger (hors Eur.)", "France")) +
-  ylim(0,0.9)
+  ylim(0,0.9) +
+  ggtitle("Localisation actuelle")
 public_private <- ggplot(df_enq, aes(x = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
-  ylim(0,0.9)
+  ylim(0,0.9) +
+  ggtitle("Type d'emploi")
 contract <- ggplot(df_enq, aes(x = contract)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
-  ylim(0,0.9)
+  ylim(0,0.9) +
+  ggtitle("Type de contrat")
+diplome <- ggplot(df_enq, aes(x = diplome)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9) +
+  ggtitle("Type de diplôme")
 nLab <- c("[15;20[", "[20;25[", "[25;30[", "[30;35[", "[35;40[",
          "[40;45[", "[45;50[", "[50;55[", "[55;60[", "[60;65[",
          "[65;70[", "[70;75[", "[80;++[", "[00;15[")
@@ -113,20 +173,48 @@ salary <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80["
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
-  ylim(0,0.9) #+
+  ylim(0,0.9)  +
+  ggtitle("Salaire (en K euro)")#+
   # theme(axis.text.x = element_text(angle = -90))
 OS <- ggplot(df_enq, aes(x = OS)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
-  ylim(0,0.9)
+  ylim(0,0.9) +
+  ggtitle("OS")
 
+
+png("plots/Plot_cat.png", height = 900, width = 1550)
 grid.arrange(gender_bp, age_bp, 
              major_field_bp, current_loc,
              public_private, contract,
-             salary, OS,
-             nrow = 4)
+             salary, diplome, OS,
+             nrow = 5)
+dev.off()
+
 ```
+
+
+## Traitement des langages
+```{r}
+lang = paste(df_enq$prog_language, collapse = ",") %>%
+  lapply(function(x){gsub(pattern = "\\s", x = x, replacement = ",")}) %>%
+  lapply(function(x){gsub(pattern = ";s", x = x, replacement = ",")}) %>%
+  lapply(function(x){gsub(pattern = "/", x = x, replacement = ",")}) %>%
+  lapply(function(x){gsub(pattern = "\\(", x = x, replacement = ",")}) %>%
+  lapply(function(x){gsub(pattern = "\\)", x = x, replacement = ",")}) %>%
+  lapply(function(x){gsub(pattern = ",+", x = x, replacement = ",")}) %>%
+  lapply(function(x){strsplit(x, split = ",")}) %>%
+  as.data.frame %>%
+  setNames("word") %>%
+  transmute(word = tolower(word)) 
+lang_lv = adist(unique(lang$word)) %>% colnames(unique(lang$word))
+
+
+```
+
+
+
 * Nuage de mot des intitulés de poste
 ```{r word_cloud}
 corpus_init <- df_enq$position_title
@@ -145,8 +233,10 @@ ggplot(lv_dist %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mu
 resume_df = as.data.frame(corpus_formated, stringsAsFactors = FALSE) %>% setNames("init_corpus") %>%
   mutate(unpunctuated = removePunctuation(init_corpus)) %>%
   mutate(unaccent = iconv(init_corpus, from="UTF-8", to="ASCII//TRANSLIT")) %>%
-  mutate(un_punc_accent = iconv(init_corpus, from="UTF-8", to="ASCII//TRANSLIT"))
-lv_dist_clean <- adist(resume_df$un_punc_accent) # Using leventstein distance to explore word proximity
+  mutate(un_punc_accent = iconv(unpunctuated, from="UTF-8", to="ASCII//TRANSLIT")) %>%
+  mutate(un_punc_acc_sw = removeWords(un_punc_accent, stopwords("french")))
+lv_dist_clean <- setNames(as.data.frame(adist(unique(resume_df$un_punc_accent))), unique(resume_df$un_punc_accent)) # Using leventstein distance to explore word proximity
+h = hclust(as.dist(lv_dist_clean))
 ggplot(lv_dist_clean %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% 
          setNames(c("lv_dist_clean", "freq")), aes(lv_dist_clean, freq)) + geom_line() 
 lv_dist_clean[upper.tri(lv_dist_clean)] = 999
