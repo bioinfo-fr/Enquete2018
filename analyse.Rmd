@@ -457,6 +457,26 @@ dev.off()
 ```
 
 
+```{r}
+exp_sal <- mutate(df_enq, year_exp_cat = case_when(
+  year_exp == 0 ~ "0",
+  year_exp <= 5 ~ "moins de 5 ans",
+  year_exp > 5 ~ "plus de 5 ans",
+  TRUE ~ NA_character_
+), salary = assign_level(salary, nLab, "[75;80[")) %>%
+  ggplot(aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = year_exp_cat)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_x_discrete(drop=FALSE) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 16) +
+  labs(title = "Salaire (k€) en fonction de l'exprérience", y = "Pourcentage", x = "", fill = "Exprérience") 
+
+png("plots/Plot_salary_exp.png", height = 2000/6, width = 1550)
+grid.arrange(exp_sal,
+             nrow = 1)
+dev.off()
+
+```
 
 
 
