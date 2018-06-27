@@ -104,29 +104,32 @@ df_enq  <- df_enq %>%
 
 
 
-## Résumé des données
+## Statistiques exploratoires
 * Nombre de répondants : `r nrow(df_enq)`
 * Réponses fermées
 ```{r closed_answers_plots, echo=FALSE, fig.height = 12, fig.width = 12}
-gender_bp <- ggplot(df_enq, aes(x = gender)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+gender <- ggplot(df_enq, aes(x = gender)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   ylim(0,0.9) +
   ggtitle("Genre")
-age_bp <- ggplot(df_enq, aes(x = age)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+
+age <- ggplot(df_enq, aes(x = age)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   ylim(0,0.9) +
   ggtitle("Age")
-major_field_bp <- ggplot(df_enq, aes(x = major_field)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+
+major_field <- ggplot(df_enq, aes(x = major_field)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   scale_x_discrete(labels = c("Equilibré", "+ Info", "+ Bio")) +
   ylim(0,0.9) +
   ggtitle("Dominance dans le travail")
+
 current_loc <- ggplot(df_enq, aes(x = current_loc)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
@@ -134,24 +137,28 @@ current_loc <- ggplot(df_enq, aes(x = current_loc)) + geom_bar(aes(y = (..count.
   scale_x_discrete(labels = c("Étranger (Eur.)", "Étranger (hors Eur.)", "France")) +
   ylim(0,0.9) +
   ggtitle("Localisation actuelle")
+
 public_private <- ggplot(df_enq, aes(x = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   ylim(0,0.9) +
   ggtitle("Type d'emploi")
+
 contract <- ggplot(df_enq, aes(x = contract)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   ylim(0,0.9) +
   ggtitle("Type de contrat")
+
 diplome <- ggplot(df_enq, aes(x = diplome)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
   ylab("Pourcentage") +
   ylim(0,0.9) +
   ggtitle("Type de diplôme")
+
 nLab <- c("[15;20[", "[20;25[", "[25;30[", "[30;35[", "[35;40[",
          "[40;45[", "[45;50[", "[50;55[", "[55;60[", "[60;65[",
          "[65;70[", "[70;75[", "[80;++[", "[00;15[")
@@ -167,8 +174,8 @@ salary <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80["
   xlab("") +
   ylab("Pourcentage") +
   ylim(0,0.9)  +
-  ggtitle("Salaire (en K euro)")#+
-  # theme(axis.text.x = element_text(angle = -90))
+  ggtitle("Salaire (en K euro)")
+
 OS <- ggplot(df_enq, aes(x = OS)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
@@ -191,8 +198,8 @@ app <- ggplot(application, aes(x = reorder(app, -prop), y = prop)) +
 
 
 png("plots/Plot_cat.png", height = 900, width = 1550)
-grid.arrange(gender_bp, age_bp, 
-             major_field_bp, current_loc,
+grid.arrange(gender, age, 
+             major_field, current_loc,
              public_private, contract,
              salary, diplome, OS, app,
              nrow = 5)
@@ -298,6 +305,141 @@ dev.off()
 ```
 
 
+## Analyses comparatives
+
+```{r priv_pub}
+gender <- ggplot(df_enq, aes(x = gender, fill = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Répartition des genres selon public/privé/autre")
+
+diplome <- ggplot(df_enq, aes(x = diplome, fill = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Type de diplôme selon public/privé/autre")
+
+age <- ggplot(df_enq, aes(x = age, fill = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Répartition des âges selon public/privé/autre")
+
+contract <- ggplot(df_enq, aes(x = contract, fill = public_private)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Type de contrat selon public/privé/autre")
+
+png("plots/Plot_pub_priv.png", height = 450, width = 1550)
+grid.arrange(gender, age, 
+             contract, diplome,
+             nrow = 2)
+dev.off()
+
+```
+
+```{r gender}
+diplome <- ggplot(df_enq, aes(x = diplome, fill = gender)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Type de diplôme selon le genre")
+
+age <- ggplot(df_enq, aes(x = age, fill = gender)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Répartition des âges selon le genre")
+
+contract <- ggplot(df_enq, aes(x = contract, fill = gender)) + geom_bar(aes(y = (..count..)/sum(..count..)), position=position_dodge()) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Type de contrat selon le genre")
+
+
+png("plots/Plot_gender.png", height = 450, width = 1550)
+grid.arrange(age, 
+             contract, diplome,
+             nrow = 2)
+dev.off()
+
+```
+
+```{r salary}
+salary_contract <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+                aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = contract)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
+  scale_x_discrete(drop=FALSE) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Salaire (en K euro) selon le contrat")
+
+salary_diplome <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+                aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = diplome)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
+  scale_x_discrete(drop=FALSE) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Salaire (en K euro) selon le diplome")
+
+salary_loc <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+                aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = current_loc)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
+  scale_x_discrete(drop=FALSE) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Salaire (en K euro) selon la localisation")
+
+salary_gender <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+                aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = gender)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
+  scale_x_discrete(drop=FALSE) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Salaire (en K euro) selon le genre")
+
+salary_pub_priv <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+                aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = public_private)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
+  scale_x_discrete(drop=FALSE) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Salaire (en K euro) selon public/privé/autre")
+
+salary_major_field <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+                aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = major_field)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
+  scale_x_discrete(drop=FALSE) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Salaire (en K euro) selon la tendance dominante dans le travail")
+
+# salary_ <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
+#                 aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]))) +
+#   geom_bar(aes(y = median(year_exp))) +
+#   scale_x_discrete(drop=FALSE) +
+#   theme_minimal() +
+#   xlab("") +
+#   ylab("Pourcentage") +
+#   ggtitle("Salaire (en K euro) selon public/privé/autre")
+
+png("plots/Plot_salary.png", height = 2000, width = 1550)
+grid.arrange(salary_contract, salary_diplome,
+             salary_loc, salary_gender,
+             salary_pub_priv, salary_major_field,
+             nrow = 6)
+dev.off()
+
+```
 
 
 
@@ -310,6 +452,7 @@ dev.off()
 <!-- corpus_formated <- tolower(corpus_init) -->
 
 <!-- # Looking into factors of difference within same words -->
+<!-- # https://stackoverflow.com/questions/21511801/text-clustering-with-levenshtein-distances -->
 <!-- punctuation_words <- grep("[[:punct:]]", corpus_formated, value = TRUE)  -->
 <!-- accent_words <- grep("[À-ÿ]", corpus_formated, value = TRUE, perl = TRUE) -->
 <!-- lv_dist <- adist(corpus_formated) # Using leventstein distance to explore word proximity -->
