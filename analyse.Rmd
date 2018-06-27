@@ -59,7 +59,8 @@ library(ggplot2)
 library(gridExtra)
 library(tm)
 library(textcat)
-#library(DT)
+library(wordcloud)
+# library(DT)
 ```
 
 ```{r logo, out.height = "150px", fig.align='center', echo=FALSE}
@@ -94,27 +95,19 @@ df_enq = df_enq_raw %>%
 ```
 
 
-```{r charac_filter}
+```{r pre_filter}
 # Looking for empty responses or with no empty token
 empty_token = c("", "null", "0")
-df_enq  = df_enq %>%
+df_enq  <- df_enq %>%
   filter(pmatch(position_title, empty_token) %>% is.na)
-
-# Semantic filter
-
-## Looking for answer not in french 
-# not_french = df_enq %>% 
-#   filter(!(textcat(position_title) == "french"))
-
-
 ```
 
 
 
 ## Résumé des données
 * Nombre de répondants : `r nrow(df_enq)`
-* Variables qualitatives
-```{r summary, echo=FALSE, fig.height = 12, fig.width = 12}
+* Réponses fermées
+```{r closed_answers_plots, echo=FALSE, fig.height = 12, fig.width = 12}
 gender_bp <- ggplot(df_enq, aes(x = gender)) + geom_bar(aes(y = (..count..)/sum(..count..))) +
   theme_minimal() +
   xlab("") +
@@ -182,22 +175,35 @@ OS <- ggplot(df_enq, aes(x = OS)) + geom_bar(aes(y = (..count..)/sum(..count..))
   ylab("Pourcentage") +
   ylim(0,0.9) +
   ggtitle("OS")
+application <- apply(df_enq[, 18:24], 2, function(x){sum(x == "X")}) %>%
+  as.data.frame %>% 
+  setNames("count") %>%
+  mutate(code = rownames(.)) %>%
+  mutate(app = c("dev web", "bdd", "scripting", "analyse stat", "sys admin", "dev application", "autre")) %>%
+  mutate(prop = count/nrow(df_enq)) 
+app <- ggplot(application, aes(x = reorder(app, -prop), y = prop)) +
+  geom_bar(stat="identity") +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ylim(0,0.9) +
+  ggtitle("Languages context of use")
 
 
 png("plots/Plot_cat.png", height = 900, width = 1550)
 grid.arrange(gender_bp, age_bp, 
              major_field_bp, current_loc,
              public_private, contract,
-             salary, diplome, OS,
+             salary, diplome, OS, app,
              nrow = 5)
 dev.off()
 
 ```
 
 
-## Traitement des langages
-```{r}
-lang = paste(df_enq$prog_language, collapse = ",") %>%
+* Réponses ouvertes
+```{r language_preprocessing_prog}
+lang <- paste(df_enq$prog_language, collapse = ",") %>%
   lapply(function(x){gsub(pattern = "\\s", x = x, replacement = ",")}) %>%
   lapply(function(x){gsub(pattern = ";s", x = x, replacement = ",")}) %>%
   lapply(function(x){gsub(pattern = "/", x = x, replacement = ",")}) %>%
@@ -208,65 +214,139 @@ lang = paste(df_enq$prog_language, collapse = ",") %>%
   as.data.frame %>%
   setNames("word") %>%
   transmute(word = tolower(word)) 
-lang_lv = adist(unique(lang$word)) %>% colnames(unique(lang$word))
 
+# Using levenshtein distance to merge close language (like with specific version, bad spelling, ...)
+lang_lv <- adist(unique(lang$word)) %>% as.data.frame %>% setNames(unique(lang$word))
+lang_lv[upper.tri(lang_lv)] <- 999
+lang_lv <- which(lang_lv <= 1, arr.ind = TRUE) %>%
+  data.frame(w1 = unique(lang$word)[.[,1]],
+             w2 = unique(lang$word)[.[,2]]) %>%
+  .[,c("w1", "w2")]
 
-```
+# Removing rows where both words are the same
+# And excluding when word is too short (<=2). This way, languages with less than 3 letters like R, C, and C# are protected
+lang_lv <- lang_lv %>% 
+  filter(!(w1 %in% c("c", "r","c#") & w2 %in% c("c", "r","c#"))) %>%
+  filter(w1 != w2) %>%
+  filter(nchar(as.character(w1)) > 2) %>%
+  cbind(truth = c("perl", "python", "python", "python", "bash", "bash", "c++", "c++", "html", "sed", "python", "mysql", "python", "", "")) %>%
+  mutate_all(as.character)
 
-
-
-* Nuage de mot des intitulés de poste
-```{r word_cloud}
-corpus_init <- df_enq$position_title
-
-# Syntax study
-corpus_formated <- tolower(corpus_init)
-
-# Looking into factors of difference within same words
-punctuation_words <- grep("[[:punct:]]", corpus_formated, value = TRUE) 
-accent_words <- grep("[À-ÿ]", corpus_formated, value = TRUE, perl = TRUE)
-lv_dist <- adist(corpus_formated) # Using leventstein distance to explore word proximity
-ggplot(lv_dist %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% 
-         setNames(c("lv_dist", "freq")), aes(lv_dist, freq)) + geom_line() 
-
-# Cleaning
-resume_df = as.data.frame(corpus_formated, stringsAsFactors = FALSE) %>% setNames("init_corpus") %>%
-  mutate(unpunctuated = removePunctuation(init_corpus)) %>%
-  mutate(unaccent = iconv(init_corpus, from="UTF-8", to="ASCII//TRANSLIT")) %>%
-  mutate(un_punc_accent = iconv(unpunctuated, from="UTF-8", to="ASCII//TRANSLIT")) %>%
-  mutate(un_punc_acc_sw = removeWords(un_punc_accent, stopwords("french")))
-lv_dist_clean <- setNames(as.data.frame(adist(unique(resume_df$un_punc_accent))), unique(resume_df$un_punc_accent)) # Using leventstein distance to explore word proximity
-h = hclust(as.dist(lv_dist_clean))
-ggplot(lv_dist_clean %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>% 
-         setNames(c("lv_dist_clean", "freq")), aes(lv_dist_clean, freq)) + geom_line() 
-lv_dist_clean[upper.tri(lv_dist_clean)] = 999
-close_words_ind <- which(lv_dist_clean < 6, arr.ind = TRUE)
-close_words <- data.frame(w1 = resume_df$un_punc_accent[close_words_ind[,1]], 
-                          w2 = resume_df$un_punc_accent[close_words_ind[,2]])
-
-######### TEST 
-
-######### 
-# tree = hclust(lv_dist)
-wss <- (nrow(lv_dist)-1)*sum(apply(lv_dist,2,var))
-for (i in 2:40) wss[i] <- sum(kmeans(lv_dist, centers=i)$withinss)
-plot(1:40, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares") 
-#########
-
-word_low_lv = data.frame(word_1 = character(), word_2 = character(), lv_dist = numeric(), stringsAsFactors = FALSE)
-for (i in 1:nrow(lv_dist)) {
-  for (j in 1:ncol(lv_dist)) {
-    if (lv_dist[i,j] > 0 & lv_dist[i,j] < 5) {
-      word_low_lv[nrow(word_low_lv) + 1,] <- c(corpus_formated[i], corpus_formated[j], lv_dist[i,j])
-    }
+# Merging
+lang <- lapply(lang$word, function(x){
+  if (x %in% lang_lv$w1) {
+    return(unique(lang_lv$truth[which(x == lang_lv$w1)]))
+  } else if(x %in% lang_lv$w2) {
+    return(unique(lang_lv$truth[which(x == lang_lv$w2)]))
+  } else {
+    return(x)
   }
-}
+}) %>% unlist %>% data.frame(prog = ., stringsAsFactors = FALSE)
+
+# Filtering content because there was some sentences and full punctuation words, and merging answer with frequency inferior to 1 into "others"
+lang <- lang %>% 
+  filter(!(grepl("^[[:punct:]]+$", prog))) %>%
+  filter(!(prog %in% stopwords("french"))) %>%
+  filter(prog != "") %>%
+  left_join(., as.data.frame(table(.$prog)), by = c("prog" = "Var1")) %>%
+  mutate(prog = ifelse(Freq < 2,"autre", prog)) %>%
+  group_by(prog) %>%
+  mutate(Freq = n())
+
+# tab_lang = table(lang$prog) %>% as.data.frame %>% arrange(desc(Freq))
+```
+
+```{r language_preprocessing_job}
+job <- data.frame(init = df_enq$position_title) %>%
+  mutate(init = as.character(init)) %>%
+  mutate(cleaned = iconv(init, from = "UTF-8", to = "ASCII//TRANSLIT")) %>%
+  mutate(cleaned = removePunctuation(cleaned)) %>%
+  mutate(cleaned = tolower(cleaned))
+
+# job_lv <- job$cleaned %>%
+#   unique %>%
+#   adist %>%
+#   as.data.frame() %>%
+#   setNames(unique(job$cleaned))
+
+# Corpus 
+job_corpus = paste(job$cleaned, collapse = " ") %>%
+  lapply(function(x){strsplit(x, split = " ")}) %>%
+  unlist %>% data.frame(name = ., stringsAsFactors = FALSE) %>%
+  filter(!(name %in% stopwords("french"))) %>%
+  filter(!(name == ""))
+  
+job_table = as.data.frame(table(job_corpus$name))
+```
+
+```{r open_answers_plots, echo=FALSE, fig.height = 12, fig.width = 12}
+prog <- ggplot(lang , aes(x = reorder(prog, prog, function(x) - table(x)))) + geom_bar(aes(y = (..count..)/sum(..count..))) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Pourcentage") +
+  ggtitle("Programming language")
+
+png("plots/Plot_prog.png", height = 600, width = 1600)
+prog
+dev.off()
+
+png("plots/Plot_job.png", height = 500, width = 500)
+wordcloud(words = job_table$Var1, freq = job_table$Freq, min.freq = 2,
+          random.order = FALSE, colors = brewer.pal(8, "Dark2"))
+dev.off()
 
 ```
 
 
 
-## Stats exploratoires
-```{r stats_explo}
 
-```
+
+
+
+<!-- ```{r semantic_analysis} -->
+<!-- corpus_init <- df_enq$position_title -->
+
+<!-- # Syntax study -->
+<!-- corpus_formated <- tolower(corpus_init) -->
+
+<!-- # Looking into factors of difference within same words -->
+<!-- punctuation_words <- grep("[[:punct:]]", corpus_formated, value = TRUE)  -->
+<!-- accent_words <- grep("[À-ÿ]", corpus_formated, value = TRUE, perl = TRUE) -->
+<!-- lv_dist <- adist(corpus_formated) # Using leventstein distance to explore word proximity -->
+<!-- ggplot(lv_dist %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>%  -->
+<!--          setNames(c("lv_dist", "freq")), aes(lv_dist, freq)) + geom_line()  -->
+
+<!-- # Cleaning -->
+<!-- resume_df = as.data.frame(corpus_formated, stringsAsFactors = FALSE) %>% setNames("init_corpus") %>% -->
+<!--   mutate(unpunctuated = removePunctuation(init_corpus)) %>% -->
+<!--   mutate(unaccent = iconv(init_corpus, from="UTF-8", to="ASCII//TRANSLIT")) %>% -->
+<!--   mutate(un_punc_accent = iconv(unpunctuated, from="UTF-8", to="ASCII//TRANSLIT")) %>% -->
+<!--   mutate(un_punc_acc_sw = removeWords(un_punc_accent, stopwords("french"))) -->
+<!-- lv_dist_clean <- setNames(as.data.frame(adist(unique(resume_df$un_punc_accent))), unique(resume_df$un_punc_accent)) # Using leventstein distance to explore word proximity -->
+<!-- h = hclust(as.dist(lv_dist_clean)) -->
+<!-- ggplot(lv_dist_clean %>% .[upper.tri(.)] %>% unlist %>% table %>% as.data.frame %>% mutate_all(as.numeric) %>%  -->
+<!--          setNames(c("lv_dist_clean", "freq")), aes(lv_dist_clean, freq)) + geom_line()  -->
+<!-- lv_dist_clean[upper.tri(lv_dist_clean)] = 999 -->
+<!-- close_words_ind <- which(lv_dist_clean < 6, arr.ind = TRUE) -->
+<!-- close_words <- data.frame(w1 = resume_df$un_punc_accent[close_words_ind[,1]],  -->
+<!--                           w2 = resume_df$un_punc_accent[close_words_ind[,2]]) -->
+
+<!-- ######### TEST  -->
+
+<!-- #########  -->
+<!-- # tree = hclust(lv_dist) -->
+<!-- wss <- (nrow(lv_dist)-1)*sum(apply(lv_dist,2,var)) -->
+<!-- for (i in 2:40) wss[i] <- sum(kmeans(lv_dist, centers=i)$withinss) -->
+<!-- plot(1:40, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares")  -->
+<!-- ######### -->
+
+<!-- word_low_lv = data.frame(word_1 = character(), word_2 = character(), lv_dist = numeric(), stringsAsFactors = FALSE) -->
+<!-- for (i in 1:nrow(lv_dist)) { -->
+<!--   for (j in 1:ncol(lv_dist)) { -->
+<!--     if (lv_dist[i,j] > 0 & lv_dist[i,j] < 5) { -->
+<!--       word_low_lv[nrow(word_low_lv) + 1,] <- c(corpus_formated[i], corpus_formated[j], lv_dist[i,j]) -->
+<!--     } -->
+<!--   } -->
+<!-- } -->
+
+<!-- ``` -->
