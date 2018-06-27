@@ -16,3 +16,37 @@ Enquête conduite entre le 12/03/2018 et le 30/04/2018 afin de dresser un portra
 
 ## Production du rapport final
 `Rscript -e "library(rmarkdown); rmarkdown::render('analyse.Rmd')"`
+
+## Rappel du formulaire d'enquête
+
+### Votre profil
+Question | Réponse(s)
+-----------------------------------|--------------------------------------------
+Quelle est votre tranche d'age ? * | `integer`
+Quel est votre sexe ? * | Femme,  Homme, Autre
+Quel est votre plus haut diplôme obtenu ? (si pas dans la liste, sélectionner équivalent) * | Bac, BTS/DUT/DEUG, Licence, Master/DEA/DESS, Doctorat
+Votre métier de bioinformaticien(ne) a * | Une dominante vers la biologie, Une dominante vers l'informatique, Un juste milieu entre les deux domaines
+Combien d'année(s) d'expérience cumulez-vous aujourd'hui ? * | `integer`
+Parmi ces années, combien d'année(s) à l'étranger ? * | `integer`
+
+### Votre environnement de travail
+Question | Réponse(s)
+-----------------------------------|--------------------------------------------
+Etes-vous actuellement en France ou à l'étranger ? * | France, Étranger (Europe), Étranger (hors Europe)
+Etes-vous dans le public ou dans le privé ? * | Public, Privé, Aucun des deux
+Etes-vous actuellement en * | Recherche d'emploi, Stage/alternance, CDD/doctorat, CDI
+Nombre de biologistes travaillant avec vous * | `integer`
+Nombre de bioinfos travaillant avec vous * | `integer`
+Autres collègues proches * | `integer`
+Quel est le titre de votre poste actuel ? * | `char`
+Votre salaire annuel brut actuel en euros se situe entre * | [15;20[, [20;25[, [25;30[, [30;35[, [35;40[, [40;45[, [45;50[, [50;55[, [55;60[, [60;65[, [65;70[, [70;75[, [80;++[
+
+### Le coin techno
+Question | Réponse(s)
+-----------------------------------|--------------------------------------------
+Votre/vos OS du quotidien * | Windows, Windows + VM GNU/Linux, GNU/Linux + VM Windows, GNU/Linux, macOS, macOS + VM Windows
+Quel(s) langages de programmation utilisez-vous quotidiennement * | `char`
+Quels sont les contextes dans lequels vous utilisez les langages que vous avez spécifié ? * | développement web, base de données, scripting, analyses/statistiques, admin systeme, développement d'application, au
+
+
+
