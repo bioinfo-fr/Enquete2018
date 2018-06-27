@@ -60,7 +60,6 @@ library(gridExtra)
 library(tm)
 library(textcat)
 library(wordcloud)
-# library(DT)
 ```
 
 ```{r logo, out.height = "150px", fig.align='center', echo=FALSE}
@@ -81,7 +80,7 @@ summary(df_enq_raw$nb_other_with)
 
 # Removing entry which have
 #   - more than 60 year exp or foreign (because of retirement max)
-#   - more than 2.5 z-score (according to ‘thumb-rule’ thresholds)
+#   - more than 3 z-score (according to ‘thumb-rule’ thresholds)
 
 df_enq = df_enq_raw %>%
   filter(year_exp < 60) %>%
@@ -438,49 +437,35 @@ salary_major_field <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLa
   scale_y_continuous(labels = scales::percent) +
   ggtitle("Salaire (en K euro) selon la tendance dominante dans le travail")
 
-# salary_ <- ggplot(df_enq %>% mutate(salary = assign_level(salary, nLab, "[75;80[")),
-#                 aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]))) +
-#   geom_bar(aes(y = median(year_exp))) +
-#   scale_x_discrete(drop=FALSE) +
-#   theme_minimal() +
-#   xlab("") +
-#   ylab("Pourcentage") +
-#   ggtitle("Salaire (en K euro) selon public/privé/autre")
-
-png("plots/Plot_salary.png", height = 2000, width = 1550)
-grid.arrange(salary_contract, salary_diplome,
-             salary_loc, salary_gender,
-             salary_pub_priv, salary_major_field,
-             nrow = 6)
-dev.off()
-
-```
-
-
-```{r}
-exp_sal <- mutate(df_enq, year_exp_cat = case_when(
+salary_year_exp <- mutate(df_enq, year_exp_cat = case_when(
   year_exp == 0 ~ "0",
   year_exp <= 5 ~ "moins de 5 ans",
   year_exp > 5 ~ "plus de 5 ans",
   TRUE ~ NA_character_
 ), salary = assign_level(salary, nLab, "[75;80[")) %>%
   ggplot(aes(x = factor(salary, levels = c(nLab, "[75;80[")[c(14,1,2,3,4,5,6,7,8,9,10,11,12,15,13)]), fill = year_exp_cat)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) +
   scale_x_discrete(drop=FALSE) +
   scale_y_continuous(labels = scales::percent) +
   theme_minimal(base_size = 16) +
   labs(title = "Salaire (k€) en fonction de l'exprérience", y = "Pourcentage", x = "", fill = "Exprérience") 
 
-png("plots/Plot_salary_exp.png", height = 2000/6, width = 1550)
-grid.arrange(exp_sal,
-             nrow = 1)
-dev.off()
 
+png("plots/Plot_salary.png", height = 2400, width = 1550)
+grid.arrange(salary_contract, salary_diplome,
+             salary_loc, salary_gender,
+             salary_pub_priv, salary_major_field,
+             salary_year_exp,
+             nrow = 7)
+dev.off()
 ```
 
 
+<!--  ########## End of the analysis for the first article  ##########  -->
+<!--  ########## Rest of this script is kept for next one   ##########  -->
 
-<!-- ```{r semantic_analysis} -->
+<!-- ```{r semantic_analysis} --
+>
 <!-- corpus_init <- df_enq$position_title -->
 
 <!-- # Syntax study -->
